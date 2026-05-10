@@ -10,6 +10,10 @@ import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
+import { Recommendation } from './pages/Recommendation';
+import { Profile } from './pages/Profile';
+import { History } from './pages/History';
+import { Articles } from './pages/Articles';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { NotFound } from './pages/NotFound';
@@ -32,10 +36,10 @@ function App() {
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/recommendations" element={<div className="p-8 text-center text-gray-500">Recommendations (Coming Soon)</div>} />
-            <Route path="/history" element={<div className="p-8 text-center text-gray-500">History (Coming Soon)</div>} />
-            <Route path="/articles" element={<div className="p-8 text-center text-gray-500">Articles (Coming Soon)</div>} />
-            <Route path="/profile" element={<div className="p-8 text-center text-gray-500">Profile (Coming Soon)</div>} />
+            <Route path="/recommendations" element={<Recommendation />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/articles" element={<Articles />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
 
           {/* 404 */}

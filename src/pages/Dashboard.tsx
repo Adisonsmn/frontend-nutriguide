@@ -14,8 +14,10 @@ import { NutritionRing } from '../components/dashboard/NutritionRing';
 import { MacroBar } from '../components/dashboard/MacroBar';
 import { FoodCard } from '../components/dashboard/FoodCard';
 import { ArticleCard } from '../components/dashboard/ArticleCard';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export const Dashboard = () => {
+  usePageTitle('Dashboard');
   const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
   const [dailySummary, setDailySummary] = useState<DailySummary | null>(null);
   const [foods, setFoods] = useState<Food[]>([]);
