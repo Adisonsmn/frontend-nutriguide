@@ -1,17 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
   Flame,
   Star,
   TrendingUp,
   RefreshCw,
-  Settings,
   Download,
-  UtensilsCrossed,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { fetchRecommendations } from '../api/recommendation.api';
 import { fetchNutritionTarget, fetchProfile } from '../api/dashboard.api';
-import type { NutritionTarget, ProfileData } from '../api/dashboard.api';
+import type { ProfileData } from '../api/dashboard.api';
 import type { RecommendationData } from '../types/recommendation.types';
 import type { Food } from '../types/food.types';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -19,34 +20,25 @@ import { usePageTitle } from '../hooks/usePageTitle';
 /* ─── helper: capitalise first letter ─── */
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-/* ─── meal-type badge colours ─── */
-const mealBadge: Record<string, string> = {
-  breakfast: 'bg-amber-100 text-amber-700',
-  lunch: 'bg-emerald-100 text-emerald-700',
-  dinner: 'bg-indigo-100 text-indigo-700',
-  snack: 'bg-pink-100 text-pink-700',
+/* ─── category badge colours ─── */
+const categoryBadgeColor: Record<string, string> = {
+  'high protein': 'bg-blue-50 text-blue-600 border-blue-100',
+  'vegetarian': 'bg-emerald-50 text-emerald-600 border-emerald-100',
+  'low carb': 'bg-violet-50 text-violet-600 border-violet-100',
+  'low sugar': 'bg-pink-50 text-pink-600 border-pink-100',
+  'gluten free': 'bg-amber-50 text-amber-600 border-amber-100',
+  'budget friendly': 'bg-teal-50 text-teal-600 border-teal-100',
 };
 
-/* ─── meal emoji icons ─── */
-const mealEmoji: Record<string, string> = {
-  breakfast: '🌅',
-  lunch: '☀️',
-  dinner: '🌙',
-  snack: '🍎',
-};
-
-/* ─── meal calorie target percentages ─── */
-const mealTargetPct: Record<string, number> = {
-  breakfast: 0.25,
-  lunch: 0.35,
-  dinner: 0.30,
-  snack: 0.10,
-};
+const getBadgeColor = (cat: string) =>
+  categoryBadgeColor[cat.trim().toLowerCase()] || 'bg-gray-50 text-gray-600 border-gray-100';
 
 export const Recommendation = () => {
   usePageTitle('Recommendations');
+  const navigate = useNavigate();
+
   const [recommendation, setRecommendation] = useState<RecommendationData | null>(null);
-  const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
+
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -55,6 +47,7 @@ export const Recommendation = () => {
   /* ─── budget / preference filter states ─── */
   const [budgetFilter, setBudgetFilter] = useState<string>('');
   const [preferenceFilter, setPreferenceFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   /* ─── load data ─── */
   const loadData = async (showRefresh = false) => {
@@ -67,7 +60,7 @@ export const Recommendation = () => {
       if (budgetFilter) params.budget = Number(budgetFilter);
       if (preferenceFilter) params.preference = preferenceFilter;
 
-      const [recRes, nutritionRes, profileRes] = await Promise.allSettled([
+      const [recRes, , profileRes] = await Promise.allSettled([
         fetchRecommendations(params as { budget?: number; preference?: string }),
         fetchNutritionTarget(),
         fetchProfile(),
@@ -76,7 +69,7 @@ export const Recommendation = () => {
       if (recRes.status === 'fulfilled') setRecommendation(recRes.value.data);
       else setError('Failed to generate recommendations. Please ensure your profile is set up.');
 
-      if (nutritionRes.status === 'fulfilled') setNutritionTarget(nutritionRes.value.data);
+      // nutritionTarget fetched but not currently used in card layout
       if (profileRes.status === 'fulfilled') setProfileData(profileRes.value.data);
     } catch {
       setError('An unexpected error occurred.');
@@ -91,10 +84,26 @@ export const Recommendation = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* ─── derived: flat list of all recommended foods ─── */
+  const allFoods = useMemo<Food[]>(() => {
+    if (!recommendation) return [];
+    return Object.values(recommendation.meals).flat();
+  }, [recommendation]);
+
+  /* ─── filtered foods (by search) ─── */
+  const filteredFoods = useMemo(() => {
+    if (!searchQuery.trim()) return allFoods;
+    const q = searchQuery.toLowerCase();
+    return allFoods.filter(
+      (f) =>
+        f.name.toLowerCase().includes(q) ||
+        f.category.toLowerCase().includes(q)
+    );
+  }, [allFoods, searchQuery]);
+
   /* ─── derived stats ─── */
   const stats = useMemo(() => {
     if (!recommendation) return null;
-    const allFoods: Food[] = Object.values(recommendation.meals).flat();
     const totalMeals = allFoods.length;
     const avgCalories = totalMeals > 0 ? Math.round(recommendation.total_calories / totalMeals) : 0;
 
@@ -115,7 +124,7 @@ export const Recommendation = () => {
     ).length;
 
     return { totalMeals, avgCalories, topCategory, mealSlots };
-  }, [recommendation]);
+  }, [recommendation, allFoods]);
 
   /* ─── export handler (CSV download) ─── */
   const handleExport = () => {
@@ -165,16 +174,16 @@ export const Recommendation = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-2 sm:px-4 py-8 animate-fade-in">
+    <div className="max-w-5xl mx-auto px-2 sm:px-4 py-8 animate-fade-in">
       {/* ─── Page Title ─── */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Food Recommendations</h1>
         <p className="text-gray-500 mt-1">
-          Personalized meal plan based on your goals and preferences
+          Discover meals that match your budget and dietary preferences
         </p>
       </div>
 
-      {/* ─── Summary Stat Cards (2×2 grid like the design) ─── */}
+      {/* ─── Summary Stat Cards (2×2 grid) ─── */}
       {stats && (
         <div className="grid grid-cols-2 gap-4 mb-6">
           {/* Total Meals */}
@@ -211,15 +220,28 @@ export const Recommendation = () => {
         </div>
       )}
 
-      {/* ─── Filter Bar + Actions ─── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        {/* Left: filters */}
-        <div className="flex flex-wrap items-center gap-2">
+      {/* ─── Search Bar + Filter Row ─── */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            id="search-recommendations"
+            type="text"
+            placeholder="Search for meals..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-11 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+          />
+        </div>
+
+        {/* Filters button area */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <select
             id="preference-filter"
             value={preferenceFilter}
             onChange={(e) => setPreferenceFilter(e.target.value)}
-            className="text-sm border border-gray-200 rounded-full px-4 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="text-sm border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="">All Categories</option>
             <option value="High Protein">High Protein</option>
@@ -229,6 +251,7 @@ export const Recommendation = () => {
             <option value="Low Sugar">Low Sugar</option>
             <option value="Gluten Free">Gluten Free</option>
           </select>
+
           {profileData?.preferences?.daily_budget && (
             <input
               id="budget-filter"
@@ -236,9 +259,30 @@ export const Recommendation = () => {
               placeholder={`Budget (max ${profileData.preferences.daily_budget})`}
               value={budgetFilter}
               onChange={(e) => setBudgetFilter(e.target.value)}
-              className="text-sm border border-gray-200 rounded-full px-4 py-2 w-44 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="text-sm border border-gray-200 rounded-xl px-4 py-2.5 w-44 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           )}
+
+          <button
+            id="filter-apply-btn"
+            onClick={() => loadData(true)}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border border-primary/20 bg-primary/5 text-primary rounded-xl hover:bg-primary/10 transition-colors disabled:opacity-50"
+          >
+            <SlidersHorizontal size={15} />
+            Filters
+          </button>
+        </div>
+      </div>
+
+      {/* ─── Actions Row ─── */}
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm text-gray-400">
+          Showing{' '}
+          <span className="font-semibold text-gray-600">{filteredFoods.length}</span> of{' '}
+          <span className="font-semibold text-gray-600">{allFoods.length}</span> results
+        </p>
+        <div className="flex items-center gap-3">
           <button
             onClick={() => loadData(true)}
             disabled={isRefreshing}
@@ -247,98 +291,81 @@ export const Recommendation = () => {
             <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} />
             {isRefreshing ? 'Generating...' : 'Regenerate'}
           </button>
+          <button
+            id="export-recommendations"
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Download size={16} />
+            Export
+          </button>
         </div>
-
-        {/* Right: Export */}
-        <button
-          id="export-recommendations"
-          onClick={handleExport}
-          className="inline-flex items-center gap-2 px-5 py-2.5 border border-gray-200 rounded-full text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          <Download size={16} />
-          Export Recommendations
-        </button>
       </div>
 
-      {/* ─── Meal Cards (matches the design's daily-card pattern) ─── */}
-      {recommendation && (
-        <div className="flex flex-col gap-6 mb-8">
-          {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((mealType) => {
-            const foods = recommendation.meals[mealType];
-            if (foods.length === 0) return null;
-
-            const mealCalories = foods.reduce((sum, f) => sum + f.calories, 0);
-            const targetForMeal = nutritionTarget
-              ? Math.round(nutritionTarget.dailyCalorieTarget * mealTargetPct[mealType])
-              : null;
-
-            return (
-              <div
-                key={mealType}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-              >
-                {/* Card Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-lg">
-                      {mealEmoji[mealType]}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{cap(mealType)}</h3>
-                      <p className="text-sm text-gray-400">
-                        {foods.length} {foods.length === 1 ? 'item' : 'items'} •{' '}
-                        {Math.round(mealCalories)} calories
-                      </p>
-                    </div>
+      {/* ─── Food Cards Grid (2-column, matching design reference) ─── */}
+      {filteredFoods.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+          {filteredFoods.map((food, idx) => (
+            <div
+              key={`${food.food_id}-${idx}`}
+              id={`food-card-${food.food_id}`}
+              onClick={() => navigate(`/food/${food.food_id}`)}
+              className="group bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+              style={{ transformOrigin: 'center center' }}
+            >
+              {/* Food Image */}
+              <div className="relative w-full h-48 overflow-hidden">
+                {food.image_url ? (
+                  <img
+                    src={food.image_url}
+                    alt={food.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                    <Flame size={32} className="text-gray-300" />
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-400">
-                    <span className="font-medium text-primary/70">
-                      {foods.length} {foods.length === 1 ? 'meal' : 'meals'}
-                    </span>
-                    <Settings size={18} className="text-gray-300" />
-                  </div>
-                </div>
+                )}
+              </div>
 
-                {/* Food Items */}
-                <div className="divide-y divide-gray-50">
-                  {foods.map((food, idx) => (
-                    <div
-                      key={`${food.food_id}-${idx}`}
-                      className="flex items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
-                          <UtensilsCrossed size={14} className="text-gray-400" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800">{food.name}</p>
-                          <p className="text-sm text-gray-400">{food.calories} calories</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs px-2.5 py-1 rounded-full font-medium ${mealBadge[mealType]}`}
-                        >
-                          {cap(mealType)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {/* Food Info */}
+              <div className="p-4">
+                <h3 className="font-semibold text-gray-900 text-base mb-2 group-hover:text-primary transition-colors">
+                  {food.name}
+                </h3>
 
-                {/* Card Footer */}
-                <div className="flex items-center justify-between px-6 py-3 bg-gray-50/50 border-t border-gray-100">
-                  <span className="text-sm font-semibold text-gray-600">Meal Total</span>
-                  <span className="text-sm font-bold text-primary">
-                    {Math.round(mealCalories)} calories
-                    {targetForMeal && (
-                      <span className="text-gray-400 font-normal"> / {targetForMeal} target</span>
-                    )}
+                {/* Calories + Price Row */}
+                <div className="flex items-center gap-4 mb-3">
+                  <span className="inline-flex items-center gap-1 text-sm text-gray-500">
+                    <Flame size={14} className="text-orange-400" />
+                    {Math.round(food.calories)} cal
+                  </span>
+                  <span className="text-sm font-semibold text-emerald-600">
+                    $ {food.price_estimate.toFixed(2)}
                   </span>
                 </div>
+
+                {/* Category Badges */}
+                <div className="flex flex-wrap gap-1.5">
+                  {food.category.split(',').map((cat) => (
+                    <span
+                      key={cat.trim()}
+                      className={`text-xs px-2.5 py-1 rounded-full font-medium border ${getBadgeColor(cat)}`}
+                    >
+                      {cat.trim()}
+                    </span>
+                  ))}
+                </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center mb-8">
+          <Search size={40} className="mx-auto text-gray-300 mb-3" />
+          <p className="text-gray-500 font-medium">No foods match your search</p>
+          <p className="text-gray-400 text-sm mt-1">Try adjusting your search terms or filters</p>
         </div>
       )}
 
@@ -386,7 +413,7 @@ export const Recommendation = () => {
         </div>
       )}
 
-      {/* ─── Motivational Banner (matching design) ─── */}
+      {/* ─── Motivational Banner ─── */}
       <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/50 rounded-2xl px-6 py-5">
         <p className="font-semibold text-amber-800">
           Eat smart, live well! 🥗

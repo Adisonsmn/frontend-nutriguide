@@ -37,6 +37,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/recommendations" element={<Recommendation />} />
+            <Route path="/food/:foodId" element={<NotFound />} />
             <Route path="/history" element={<History />} />
             <Route path="/articles" element={<Articles />} />
             <Route path="/profile" element={<Profile />} />
