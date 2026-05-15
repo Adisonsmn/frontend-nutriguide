@@ -179,7 +179,7 @@ export const Recommendation = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Food Recommendations</h1>
         <p className="text-gray-500 mt-1">
-          Discover meals that match your budget and dietary preferences
+          Personalized meals auto-generated based on your nutritional profile, goals, and budget.
         </p>
       </div>
 
@@ -207,7 +207,7 @@ export const Recommendation = () => {
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
             <Star size={20} className="text-gold" />
             <p className="text-3xl font-bold text-gray-900 mt-2">{stats.mealSlots}</p>
-            <p className="text-sm text-gray-500">Meal Slots</p>
+            <p className="text-sm text-gray-500">Daily Meals</p>
           </div>
 
           {/* Top Category */}
