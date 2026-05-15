@@ -16,6 +16,9 @@ import { History } from './pages/History';
 import { Articles } from './pages/Articles';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
+import { FoodDetail } from './pages/FoodDetail';
+import { RecipePage } from './pages/RecipePage';
+import { ArticleDetail } from './pages/ArticleDetail';
 import { NotFound } from './pages/NotFound';
 
 function App() {
@@ -37,9 +40,11 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/recommendations" element={<Recommendation />} />
-            <Route path="/food/:foodId" element={<NotFound />} />
+            <Route path="/food/:foodId" element={<FoodDetail />} />
+            <Route path="/food/:foodId/recipe" element={<RecipePage />} />
             <Route path="/history" element={<History />} />
             <Route path="/articles" element={<Articles />} />
+            <Route path="/articles/:articleId" element={<ArticleDetail />} />
             <Route path="/profile" element={<Profile />} />
           </Route>
 

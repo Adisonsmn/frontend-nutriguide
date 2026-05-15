@@ -342,7 +342,7 @@ export const Recommendation = () => {
                     {Math.round(food.calories)} cal
                   </span>
                   <span className="text-sm font-semibold text-emerald-600">
-                    $ {food.price_estimate.toFixed(2)}
+                    Rp {food.price_estimate.toLocaleString('id-ID')}
                   </span>
                 </div>
 

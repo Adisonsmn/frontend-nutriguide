@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Clock, ArrowRight, Star } from 'lucide-react';
 import { fetchAllArticles } from '../api/article.api';
 import type { Article } from '../types/article.types';
@@ -24,12 +25,12 @@ const CATEGORIES = ['All', 'Nutrition', 'Exercise', 'Habits', 'Recipes', 'Wellne
 
 export const Articles = () => {
   usePageTitle('Articles');
+  const navigate = useNavigate();
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /* ─── load ─── */
   useEffect(() => {
@@ -135,10 +136,7 @@ export const Articles = () => {
               <ArticleCard
                 key={article.article_id}
                 article={article}
-                isExpanded={expandedId === article.article_id}
-                onToggle={() =>
-                  setExpandedId(expandedId === article.article_id ? null : article.article_id)
-                }
+                onNavigate={() => navigate(`/articles/${article.article_id}`)}
                 fmtDate={fmtDate}
               />
             ))}
@@ -155,10 +153,7 @@ export const Articles = () => {
               <ArticleCard
                 key={article.article_id}
                 article={article}
-                isExpanded={expandedId === article.article_id}
-                onToggle={() =>
-                  setExpandedId(expandedId === article.article_id ? null : article.article_id)
-                }
+                onNavigate={() => navigate(`/articles/${article.article_id}`)}
                 fmtDate={fmtDate}
               />
             ))}
@@ -204,24 +199,28 @@ export const Articles = () => {
  * ═══════════════════════════════════════════════════════════════ */
 interface ArticleCardProps {
   article: Article;
-  isExpanded: boolean;
-  onToggle: () => void;
+  onNavigate: () => void;
   fmtDate: (d: string) => string;
 }
 
-const ArticleCard = ({ article, isExpanded, onToggle, fmtDate }: ArticleCardProps) => {
+const ArticleCard = ({ article, onNavigate, fmtDate }: ArticleCardProps) => {
   const mins = readTime(article.content);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col">
+    <div
+      onClick={onNavigate}
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer group hover:-translate-y-1"
+    >
       {/* Image */}
       {article.image_url ? (
-        <img
-          src={article.image_url}
-          alt={article.title}
-          className="w-full h-48 object-cover"
-          loading="lazy"
-        />
+        <div className="w-full h-48 overflow-hidden">
+          <img
+            src={article.image_url}
+            alt={article.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
+          />
+        </div>
       ) : (
         <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
           Image not available
@@ -245,24 +244,21 @@ const ArticleCard = ({ article, isExpanded, onToggle, fmtDate }: ArticleCardProp
         </div>
 
         {/* Title */}
-        <h3 className="font-bold text-gray-900 text-base leading-snug mb-2 line-clamp-2">
+        <h3 className="font-bold text-gray-900 text-base leading-snug mb-2 line-clamp-2 group-hover:text-primary transition-colors">
           {article.title}
         </h3>
 
         {/* Preview */}
-        <p className={`text-sm text-gray-500 leading-relaxed mb-4 flex-1 ${isExpanded ? '' : 'line-clamp-3'}`}>
+        <p className="text-sm text-gray-500 leading-relaxed mb-4 flex-1 line-clamp-3">
           {article.content}
         </p>
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
           <span className="text-xs text-gray-400">{fmtDate(article.published_at)}</span>
-          <button
-            onClick={onToggle}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-          >
-            {isExpanded ? 'Show Less' : 'Read More'} <ArrowRight size={14} />
-          </button>
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary group-hover:text-primary/80 transition-colors">
+            Read More <ArrowRight size={14} />
+          </span>
         </div>
       </div>
     </div>
