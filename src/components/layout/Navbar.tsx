@@ -1,12 +1,12 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { NotificationDropdown } from './NotificationDropdown';
 import {
   LayoutDashboard,
   BookOpen,
   History,
   FileText,
   User,
-  Bell,
   LogOut
 } from 'lucide-react';
 
@@ -76,12 +76,8 @@ export const Navbar = () => {
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <>
-              {/* Notification Bell */}
-              <button className="relative p-2 text-primary-foreground/70 hover:text-white transition-colors">
-                <Bell size={20} />
-                {/* Red dot badge */}
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-primary"></span>
-              </button>
+              {/* Notification Dropdown */}
+              <NotificationDropdown />
 
               {/* User Avatar & Logout */}
               <div className="flex items-center gap-3 border-l border-white/10 pl-4 ml-2">
