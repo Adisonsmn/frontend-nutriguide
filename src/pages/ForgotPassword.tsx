@@ -19,16 +19,14 @@ export const ForgotPassword = () => {
     setIsLoading(true);
     try {
       const response = await forgotPassword(email.trim());
-      const generatedOtp = response.data.otp; // Ambil OTP dari response
       
-      // Tampilkan OTP di toast dan console (Karena ini simulasi tanpa email sungguhan)
-      toast.success(`OTP sent! Your OTP is: ${generatedOtp}`, { duration: 5000 });
-      console.log('=== FORGOT PASSWORD SIMULATION ===');
-      console.log(`Email: ${email.trim()}`);
-      console.log(`OTP: ${generatedOtp}`);
-      console.log('==================================');
+      // If OTP is returned (email failed), show it in toast for dev fallback
+      if (response.data.otp) {
+        toast.success(`Email failed — OTP: ${response.data.otp}`, { duration: 8000 });
+      } else {
+        toast.success('OTP has been sent to your email! Check your inbox.', { duration: 5000 });
+      }
 
-      // Simpan email ke localStorage sementara agar tidak perlu ketik ulang di halaman reset
       localStorage.setItem('resetEmail', email.trim());
       navigate('/reset-password');
     } catch (error: unknown) {

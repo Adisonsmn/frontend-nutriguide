@@ -31,7 +31,7 @@ export const FoodCard = ({ food }: FoodCardProps) => {
             {food.calories} cal
           </span>
           <span className="text-green-600 font-semibold text-sm">
-            $ {food.price_estimate.toFixed(2)}
+            Rp {food.price_estimate.toLocaleString('id-ID')}
           </span>
         </div>
         <div className="flex flex-wrap gap-2 mt-2.5">

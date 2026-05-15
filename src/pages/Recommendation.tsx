@@ -67,7 +67,11 @@ export const Recommendation = () => {
       ]);
 
       if (recRes.status === 'fulfilled') setRecommendation(recRes.value.data);
-      else setError('Failed to generate recommendations. Please ensure your profile is set up.');
+      else {
+        const reason = recRes.reason;
+        const backendMsg = reason?.response?.data?.message;
+        setError(backendMsg || 'Failed to generate recommendations. Please ensure your profile is set up.');
+      }
 
       // nutritionTarget fetched but not currently used in card layout
       if (profileRes.status === 'fulfilled') setProfileData(profileRes.value.data);
