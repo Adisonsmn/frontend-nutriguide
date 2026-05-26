@@ -28,6 +28,7 @@ export const Dashboard = () => {
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
+    let cancelled = false;
     const loadData = async () => {
       setIsLoading(true);
       try {
@@ -38,6 +39,9 @@ export const Dashboard = () => {
           fetchArticles(),
         ]);
 
+        // Bug #22: Don't update state if the component unmounted during fetch
+        if (cancelled) return;
+
         if (nutritionRes.status === 'fulfilled') setNutritionTarget(nutritionRes.value.data);
         if (summaryRes.status === 'fulfilled') setDailySummary(summaryRes.value.data);
         if (foodsRes.status === 'fulfilled') setFoods(foodsRes.value.data);
@@ -45,10 +49,11 @@ export const Dashboard = () => {
       } catch (error) {
         console.error('Error loading dashboard data', error);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
     loadData();
+    return () => { cancelled = true; };
   }, [activeFilter]);
 
   const getGreeting = () => {

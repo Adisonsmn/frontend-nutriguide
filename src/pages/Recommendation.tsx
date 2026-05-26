@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
@@ -11,7 +11,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { fetchRecommendations } from '../api/recommendation.api';
-import { fetchNutritionTarget, fetchProfile } from '../api/dashboard.api';
+import { fetchProfile } from '../api/dashboard.api';
 import type { ProfileData } from '../api/dashboard.api';
 import type { RecommendationData } from '../types/recommendation.types';
 import type { Food } from '../types/food.types';
@@ -38,7 +38,6 @@ export const Recommendation = () => {
   const navigate = useNavigate();
 
   const [recommendation, setRecommendation] = useState<RecommendationData | null>(null);
-
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -49,44 +48,79 @@ export const Recommendation = () => {
   const [preferenceFilter, setPreferenceFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  /* ─── load data ─── */
-  const loadData = async (showRefresh = false) => {
+  /* ─── track whether filters have been initialized from profile ─── */
+  const filtersInitialized = useRef(false);
+
+  /* ─── fetch recommendations with current filter values ─── */
+  const fetchRecs = async (
+    budget: string,
+    preference: string,
+    showRefresh = false
+  ) => {
     if (showRefresh) setIsRefreshing(true);
     else setIsLoading(true);
     setError(null);
 
     try {
       const params: Record<string, unknown> = {};
-      if (budgetFilter) params.budget = Number(budgetFilter);
-      if (preferenceFilter) params.preference = preferenceFilter;
+      if (budget) params.budget = Number(budget);
+      if (preference) params.preference = preference;
 
-      const [recRes, , profileRes] = await Promise.allSettled([
-        fetchRecommendations(params as { budget?: number; preference?: string }),
-        fetchNutritionTarget(),
-        fetchProfile(),
-      ]);
-
-      if (recRes.status === 'fulfilled') setRecommendation(recRes.value.data);
-      else {
-        const reason = recRes.reason;
-        const backendMsg = reason?.response?.data?.message;
-        setError(backendMsg || 'Failed to generate recommendations. Please ensure your profile is set up.');
-      }
-
-      // nutritionTarget fetched but not currently used in card layout
-      if (profileRes.status === 'fulfilled') setProfileData(profileRes.value.data);
-    } catch {
-      setError('An unexpected error occurred.');
+      const recRes = await fetchRecommendations(
+        params as { budget?: number; preference?: string }
+      );
+      setRecommendation(recRes.data);
+    } catch (err: unknown) {
+      const reason = err as { response?: { data?: { message?: string } } };
+      const backendMsg = reason?.response?.data?.message;
+      setError(
+        backendMsg ||
+          'Failed to generate recommendations. Please ensure your profile is set up.'
+      );
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
   };
 
+  /* ─── initial load: fetch profile first, populate filters, then fetch recs ─── */
   useEffect(() => {
-    loadData();
+    if (filtersInitialized.current) return;
+    filtersInitialized.current = true;
+
+    const initLoad = async () => {
+      setIsLoading(true);
+      try {
+        const profileRes = await fetchProfile();
+        const pData = profileRes.data;
+        setProfileData(pData);
+
+        // Pre-populate filter state from saved preferences
+        const initBudget =
+          pData?.preferences?.daily_budget != null
+            ? String(pData.preferences.daily_budget)
+            : '';
+        const initPreference = pData?.preferences?.diet_type ?? '';
+
+        setBudgetFilter(initBudget);
+        setPreferenceFilter(initPreference);
+
+        // Fetch recommendations with initialized filters
+        await fetchRecs(initBudget, initPreference, false);
+      } catch {
+        // Profile fetch failed — still attempt recommendations with empty filters
+        await fetchRecs('', '', false);
+      }
+    };
+
+    initLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* ─── apply filters (user-triggered) ─── */
+  const handleApplyFilters = () => {
+    fetchRecs(budgetFilter, preferenceFilter, true);
+  };
 
   /* ─── derived: flat list of all recommended foods ─── */
   const allFoods = useMemo<Food[]>(() => {
@@ -167,7 +201,7 @@ export const Recommendation = () => {
         <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
           <p className="text-red-600 font-medium mb-4">{error}</p>
           <button
-            onClick={() => loadData()}
+            onClick={() => fetchRecs(budgetFilter, preferenceFilter, false)}
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-full text-sm font-semibold hover:opacity-90 transition-opacity"
           >
             <RefreshCw size={16} /> Try Again
@@ -256,20 +290,23 @@ export const Recommendation = () => {
             <option value="Gluten Free">Gluten Free</option>
           </select>
 
-          {profileData?.preferences?.daily_budget && (
-            <input
-              id="budget-filter"
-              type="number"
-              placeholder={`Budget (max ${profileData.preferences.daily_budget})`}
-              value={budgetFilter}
-              onChange={(e) => setBudgetFilter(e.target.value)}
-              className="text-sm border border-gray-200 rounded-xl px-4 py-2.5 w-44 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          )}
+          {/* Budget input — always visible */}
+          <input
+            id="budget-filter"
+            type="number"
+            placeholder={
+              profileData?.preferences?.daily_budget != null
+                ? `Budget (max ${profileData.preferences.daily_budget})`
+                : 'Budget (IDR)'
+            }
+            value={budgetFilter}
+            onChange={(e) => setBudgetFilter(e.target.value)}
+            className="text-sm border border-gray-200 rounded-xl px-4 py-2.5 w-44 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
 
           <button
             id="filter-apply-btn"
-            onClick={() => loadData(true)}
+            onClick={handleApplyFilters}
             disabled={isRefreshing}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border border-primary/20 bg-primary/5 text-primary rounded-xl hover:bg-primary/10 transition-colors disabled:opacity-50"
           >
@@ -288,7 +325,7 @@ export const Recommendation = () => {
         </p>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => loadData(true)}
+            onClick={handleApplyFilters}
             disabled={isRefreshing}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
           >

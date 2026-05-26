@@ -30,6 +30,8 @@ export const FoodDetail = () => {
   const [food, setFood] = useState<Food | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  // Bug #15: User-configurable quantity instead of hardcoded 100g
+  const [quantity, setQuantity] = useState<number>(100);
 
   usePageTitle(food?.name ?? 'Food Detail');
 
@@ -51,11 +53,12 @@ export const FoodDetail = () => {
 
   /* ─── Save to History ─── */
   const handleSaveToHistory = async () => {
-    if (!foodId) return;
+    if (!foodId || quantity <= 0) return;
     setIsSaving(true);
     try {
-      await addToHistory(foodId, 100);
-      toast.success('Saved to history!');
+      // Bug #15: Use user-specified quantity
+      await addToHistory(foodId, quantity);
+      toast.success(`Saved ${quantity}g to history!`);
     } catch {
       toast.error('Failed to save to history');
     } finally {
@@ -177,14 +180,30 @@ export const FoodDetail = () => {
           <BookOpen size={18} /> View Recipe
         </button>
 
+        {/* Bug #15: Quantity input */}
+        <div className="mb-4">
+          <label htmlFor="quantity-input" className="block text-sm font-semibold text-gray-700 mb-2">
+            Quantity (grams)
+          </label>
+          <input
+            id="quantity-input"
+            type="number"
+            min={1}
+            max={2000}
+            value={quantity}
+            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+          />
+        </div>
+
         {/* Save to History */}
         <button
           id="btn-save-history"
           onClick={handleSaveToHistory}
-          disabled={isSaving}
+          disabled={isSaving || quantity <= 0}
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gold text-gray-900 font-semibold hover:bg-gold/90 transition-colors mb-3 disabled:opacity-50"
         >
-          <Save size={18} /> {isSaving ? 'Saving...' : 'Save to History'}
+          <Save size={18} /> {isSaving ? 'Saving...' : `Save ${quantity}g to History`}
         </button>
 
         {/* Back to Recommendations */}

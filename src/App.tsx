@@ -20,6 +20,7 @@ import { FoodDetail } from './pages/FoodDetail';
 import { RecipePage } from './pages/RecipePage';
 import { ArticleDetail } from './pages/ArticleDetail';
 import { NotFound } from './pages/NotFound';
+import { Notifications } from './pages/Notifications';
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
             <Route path="/articles" element={<Articles />} />
             <Route path="/articles/:articleId" element={<ArticleDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/notifications" element={<Notifications />} />
           </Route>
 
           {/* 404 */}

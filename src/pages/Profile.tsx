@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/axiosInstance';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Pencil,
@@ -30,6 +31,7 @@ const DIET_TYPES = ['High Protein', 'Vegetarian', 'Low Carb', 'Budget Friendly',
 export const Profile = () => {
   usePageTitle('Profile');
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuthStore();
 
   const [profileData, setProfileData] = useState<ProfileResponse | null>(null);
@@ -81,49 +83,75 @@ export const Profile = () => {
   const profileExists = !!profileData?.profile;
   const showForm = !profileExists || isEditing;
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    sessionStorage.removeItem('accessToken');
-    sessionStorage.removeItem('refreshToken');
+  const handleLogout = async () => {
+    // Call the logout API so the server clears the HTTP-only cookie
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Proceed with client-side cleanup even if server logout fails
+    }
+    // Bug #30: Clear profileChecked so a different user triggers the guard
+    sessionStorage.removeItem('profileChecked');
     logout();
     navigate('/');
   };
 
   /* ─── save profile ─── */
   const handleSave = async () => {
-    // Validation
-    if (!age || !weightKg || !heightCm || !gender || !goal) {
-      toast.error('Please fill in all required fields.');
+    // ── Client-side validation ──
+    const ageNum = Number(age);
+    const weightNum = Number(weightKg);
+    const heightNum = Number(heightCm);
+
+    if (!age || ageNum <= 0) {
+      toast.error('Please enter a valid age (greater than 0).');
+      return;
+    }
+    if (!weightKg || weightNum <= 0) {
+      toast.error('Please enter a valid weight (greater than 0).');
+      return;
+    }
+    if (!heightCm || heightNum <= 0) {
+      toast.error('Please enter a valid height (greater than 0).');
+      return;
+    }
+    if (!gender) {
+      toast.error('Please select your gender.');
+      return;
+    }
+    if (!goal) {
+      toast.error('Please select a health goal.');
       return;
     }
 
     setIsSaving(true);
     try {
       if (profileExists) {
-        // Update existing profile
+        // ── Update existing profile ──
         const updateData: UpdateProfilePayload = {
-          age: Number(age),
-          weight_kg: Number(weightKg),
-          height_cm: Number(heightCm),
+          age: ageNum,
+          weight_kg: weightNum,
+          height_cm: heightNum,
           gender,
           goal,
         };
         await updateProfile(updateData);
       } else {
-        // Create new profile
+        // ── Create new profile ──
         const createData: CreateProfilePayload = {
-          age: Number(age),
-          weight_kg: Number(weightKg),
-          height_cm: Number(heightCm),
+          age: ageNum,
+          weight_kg: weightNum,
+          height_cm: heightNum,
           gender,
           goal,
         };
         await createProfile(createData);
+        // Clear profile-checked flag so ProtectedRoute re-validates next navigation
+        sessionStorage.removeItem('profileChecked');
       }
 
-      // Save preferences if diet type is set
-      if (dietType && dailyBudget) {
+      // ── Save preferences only if both fields are provided ──
+      if (dietType && dailyBudget && Number(dailyBudget) > 0) {
         const prefData: UpsertPreferencesPayload = {
           diet_type: dietType,
           daily_budget: Number(dailyBudget),
@@ -132,9 +160,17 @@ export const Profile = () => {
         await upsertPreferences(prefData);
       }
 
-      toast.success(profileExists ? 'Profile updated!' : 'Profile created!');
+      toast.success('Profile saved successfully! ✅');
       setIsEditing(false);
       await loadProfile();
+
+      // ── Redirect back if user came from a redirect ──
+      const from = (location.state as { from?: string } | null)?.from;
+      if (!profileExists && from && from !== '/profile') {
+        navigate(from, { replace: true });
+      } else if (!profileExists) {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || 'Failed to save profile.');

@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "message": "Login successful",
+  "data": {
+    "accessToken": "mock-access-token",
+    "user": {
+      "user_id": "USER-001",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "is_active": true
+    }
+  }
+}

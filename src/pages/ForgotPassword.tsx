@@ -20,12 +20,8 @@ export const ForgotPassword = () => {
     try {
       const response = await forgotPassword(email.trim());
       
-      // If OTP is returned (email failed), show it in toast for dev fallback
-      if (response.data.otp) {
-        toast.success(`Email failed — OTP: ${response.data.otp}`, { duration: 8000 });
-      } else {
-        toast.success('OTP has been sent to your email! Check your inbox.', { duration: 5000 });
-      }
+      // Bug #1: OTP is no longer returned to the client — just show success
+      toast.success(response.data.message || 'OTP has been sent to your email! Check your inbox.', { duration: 5000 });
 
       localStorage.setItem('resetEmail', email.trim());
       navigate('/reset-password');

@@ -3,10 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { registerUser } from '../api/auth.api';
+import { registerUser, loginUser } from '../api/auth.api';
+import { useAuthStore } from '../store/authStore';
 
 export const Register = () => {
   const navigate = useNavigate();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   // Form values
   const [firstName, setFirstName] = useState('');
@@ -62,8 +64,12 @@ export const Register = () => {
       const name = `${firstName.trim()} ${lastName.trim()}`;
       await registerUser(name, emailOrPhone.trim(), password);
 
-      toast.success('Registration successful! Please login.');
-      navigate('/login');
+      // Bug #14: Auto-login after registration — no need to redirect to /login
+      const loginResult = await loginUser(emailOrPhone.trim(), password);
+      setAuth(loginResult.data.user, loginResult.data.accessToken);
+
+      toast.success('Registration successful! Let\'s set up your profile.');
+      navigate('/profile');
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const message = error.response?.data?.message;

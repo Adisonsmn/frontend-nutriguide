@@ -1,0 +1,15 @@
+{
+  "status": "success",
+  "data": {
+    "date": "2026-05-27",
+    "totalCalories": 1500,
+    "targetCalories": 2000,
+    "remaining": 500,
+    "percentage": 75,
+    "macros": {
+      "protein": 120,
+      "carbs": 200,
+      "fat": 50
+    }
+  }
+}

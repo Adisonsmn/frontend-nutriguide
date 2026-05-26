@@ -7,16 +7,18 @@ export const registerUser = async (name: string, email: string, password: string
   return response.data;
 };
 
+// Bug #8: Response no longer includes refreshToken (it's set as an HTTP-only cookie)
 export const loginUser = async (email: string, password: string) => {
   const response = await api.post<ApiResponse<{
     accessToken: string;
-    refreshToken: string;
     user: User;
   }>>('/auth/login', { email, password });
   return response.data;
 };
+
+// Bug #29: Response type no longer expects `otp` field
 export const forgotPassword = async (email: string) => {
-  const response = await api.post<ApiResponse<{ otp: string; message: string }>>('/auth/forgot-password', { email });
+  const response = await api.post<ApiResponse<{ message: string }>>('/auth/forgot-password', { email });
   return response.data;
 };
 
@@ -24,3 +26,4 @@ export const resetPassword = async (email: string, otp: string, newPassword: str
   const response = await api.post<ApiResponse<{ message: string }>>('/auth/reset-password', { email, otp, newPassword });
   return response.data;
 };
+

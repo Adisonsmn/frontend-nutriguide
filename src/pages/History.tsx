@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import {
   Calendar,
@@ -135,7 +135,12 @@ export const History = () => {
   }, [history, dayGroups]);
 
   /* ─── delete handler ─── */
+  // Bug #16: Track in-flight deletes with a ref to prevent double-click
+  const deletingIds = useRef(new Set<string>());
+
   const handleDelete = async (historyId: string) => {
+    if (deletingIds.current.has(historyId)) return;
+    deletingIds.current.add(historyId);
     setDeletingId(historyId);
     try {
       await deleteHistoryEntry(historyId);
@@ -144,6 +149,7 @@ export const History = () => {
     } catch {
       toast.error('Failed to delete entry');
     } finally {
+      deletingIds.current.delete(historyId);
       setDeletingId(null);
     }
   };

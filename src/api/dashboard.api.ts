@@ -54,7 +54,11 @@ export const fetchNutritionTarget = async () => {
 };
 
 export const fetchDailySummary = async () => {
-  const response = await api.get<ApiResponse<DailySummary>>('/history/summary');
+  // Bug #28: Send the client's timezone offset so the server computes "today" correctly
+  const timezoneOffset = new Date().getTimezoneOffset() * -1; // e.g., 420 for WIB (UTC+7)
+  const response = await api.get<ApiResponse<DailySummary>>('/history/summary', {
+    params: { timezoneOffset },
+  });
   return response.data;
 };
 

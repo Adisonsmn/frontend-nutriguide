@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Check } from 'lucide-react';
 import {
   fetchNotifications,
@@ -35,6 +36,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export const NotificationDropdown = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -186,7 +188,10 @@ export const NotificationDropdown = () => {
           {notifications.length > 0 && (
             <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50/50">
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate('/notifications');
+                }}
                 className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
               >
                 View All
