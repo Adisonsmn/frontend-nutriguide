@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { NotificationDropdown } from './NotificationDropdown';
@@ -7,18 +8,22 @@ import {
   History,
   FileText,
   User,
-  LogOut
+  LogOut,
+  Menu,
+  X
 } from 'lucide-react';
 
 export const Navbar = () => {
   const { isAuthenticated, logout, user } = useAuthStore();
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     sessionStorage.removeItem('accessToken');
     sessionStorage.removeItem('refreshToken');
+    setIsOpen(false);
     logout();
     navigate('/');
   };
@@ -72,15 +77,15 @@ export const Navbar = () => {
           )}
         </div>
 
-        {/* Right: Notification & Avatar / Auth */}
+        {/* Right: Notification & Avatar / Hamburger */}
         <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <>
               {/* Notification Dropdown */}
               <NotificationDropdown />
 
-              {/* User Avatar & Logout */}
-              <div className="flex items-center gap-3 border-l border-white/10 pl-4 ml-2">
+              {/* User Avatar & Logout - Desktop Only */}
+              <div className="hidden md:flex items-center gap-3 border-l border-white/10 pl-4 ml-2">
                 <div className="w-9 h-9 rounded-full bg-gold flex items-center justify-center shadow-sm">
                   <span className="text-primary font-bold">{userInitial}</span>
                 </div>
@@ -92,6 +97,15 @@ export const Navbar = () => {
                   <LogOut size={20} />
                 </button>
               </div>
+
+              {/* Hamburger Toggle Button - Mobile Only */}
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="md:hidden p-2 rounded-lg text-primary-foreground/70 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Toggle navigation menu"
+              >
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
             </>
           ) : (
             <div className="flex gap-3">
@@ -111,6 +125,69 @@ export const Navbar = () => {
           )}
         </div>
       </div>
+
+      {/* Mobile Links - Expandable Drawer */}
+      {isAuthenticated && isOpen && (
+        <div className="md:hidden mt-3 pt-3 border-t border-white/10 flex flex-col gap-2 opacity-0 animate-fade-in">
+          <NavLink
+            to="/dashboard"
+            className={navLinkClass}
+            onClick={() => setIsOpen(false)}
+          >
+            <LayoutDashboard size={18} />
+            <span>Dashboard</span>
+          </NavLink>
+          <NavLink
+            to="/recommendations"
+            className={navLinkClass}
+            onClick={() => setIsOpen(false)}
+          >
+            <BookOpen size={18} />
+            <span>Recommendations</span>
+          </NavLink>
+          <NavLink
+            to="/history"
+            className={navLinkClass}
+            onClick={() => setIsOpen(false)}
+          >
+            <History size={18} />
+            <span>History</span>
+          </NavLink>
+          <NavLink
+            to="/articles"
+            className={navLinkClass}
+            onClick={() => setIsOpen(false)}
+          >
+            <FileText size={18} />
+            <span>Articles</span>
+          </NavLink>
+          <NavLink
+            to="/profile"
+            className={navLinkClass}
+            onClick={() => setIsOpen(false)}
+          >
+            <User size={18} />
+            <span>Profile</span>
+          </NavLink>
+          
+          {/* User Profile Info & Logout - Mobile Only */}
+          <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-1">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gold flex items-center justify-center shadow-sm">
+                <span className="text-primary font-bold">{userInitial}</span>
+              </div>
+              <span className="text-sm font-medium">{user?.name || 'User'}</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 border border-red-400/30 hover:border-red-400 text-red-400 rounded-xl text-xs font-semibold hover:bg-red-500/10 transition-all"
+            >
+              <LogOut size={14} />
+              <span>Log Out</span>
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
