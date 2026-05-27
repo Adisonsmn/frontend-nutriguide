@@ -83,6 +83,8 @@ api.interceptors.response.use(
         // Refresh failed — clear auth state and redirect to login
         window.__nutriguide_access_token = null;
         localStorage.removeItem('auth-storage');
+        sessionStorage.removeItem('auth-storage');
+        localStorage.removeItem('rememberMe');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {

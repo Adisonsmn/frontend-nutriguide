@@ -92,6 +92,9 @@ export const Profile = () => {
     }
     // Bug #30: Clear profileChecked so a different user triggers the guard
     sessionStorage.removeItem('profileChecked');
+    localStorage.removeItem('auth-storage');
+    sessionStorage.removeItem('auth-storage');
+    localStorage.removeItem('rememberMe');
     logout();
     navigate('/');
   };

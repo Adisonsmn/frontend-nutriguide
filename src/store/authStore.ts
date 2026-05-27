@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { User } from '../types/auth.types';
 
 interface AuthState {
@@ -29,6 +29,28 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => ({
+        getItem: (name) => {
+          const localValue = localStorage.getItem(name);
+          if (localValue) return localValue;
+          return sessionStorage.getItem(name);
+        },
+        setItem: (name, value) => {
+          const remember = localStorage.getItem('rememberMe') === 'true';
+          if (remember) {
+            localStorage.setItem(name, value);
+            sessionStorage.removeItem(name);
+          } else {
+            sessionStorage.setItem(name, value);
+            localStorage.removeItem(name);
+          }
+        },
+        removeItem: (name) => {
+          localStorage.removeItem(name);
+          sessionStorage.removeItem(name);
+          localStorage.removeItem('rememberMe');
+        },
+      })),
       // Bug #8: Only persist user + isAuthenticated, NOT the accessToken
       // The access token lives only in memory (Zustand state + window global).
       // The refresh token lives in an HTTP-only cookie (set by the server).

@@ -43,15 +43,12 @@ export const Login = () => {
     try {
       const result = await loginUser(emailOrPhone.trim(), password);
 
+      // Store rememberMe preference so the custom storage engine knows where to persist
+      localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false');
+
       // Bug #8: Access token goes directly into Zustand memory (no localStorage/sessionStorage).
       // The refresh token is set as an HTTP-only cookie by the server automatically.
       setAuth(result.data.user, result.data.accessToken);
-
-      // Bug #23: If "Remember me" is unchecked, remove the persisted Zustand state
-      // so the session doesn't survive a browser restart.
-      if (!rememberMe) {
-        localStorage.removeItem('auth-storage');
-      }
 
       toast.success('Login successful!');
       navigate('/dashboard');

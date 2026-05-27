@@ -23,6 +23,9 @@ export const Navbar = () => {
     localStorage.removeItem('refreshToken');
     sessionStorage.removeItem('accessToken');
     sessionStorage.removeItem('refreshToken');
+    localStorage.removeItem('auth-storage');
+    sessionStorage.removeItem('auth-storage');
+    localStorage.removeItem('rememberMe');
     setIsOpen(false);
     logout();
     navigate('/');
