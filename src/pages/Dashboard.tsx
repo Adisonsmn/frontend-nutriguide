@@ -146,7 +146,7 @@ export const Dashboard = () => {
           <div className="bg-primary rounded-2xl p-8 mb-8 shadow-md">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-2xl">📈</span>
-              <h2 className="text-xl font-bold text-white">Get Personalized Recommendations</h2>
+              <h2 className="text-xl font-bold text-white">Get Personalized Recommendations tessss</h2>
             </div>
             <p className="text-primary-foreground/80 mb-5">
               Discover meals tailored to your goals, budget, and dietary preferences
