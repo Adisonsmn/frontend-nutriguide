@@ -6,5 +6,6 @@ export interface FoodHistory {
   food_id: string;
   consumed_at: string;
   qty_gram: number;
+  is_consumed: boolean;
   food?: Food;
 }

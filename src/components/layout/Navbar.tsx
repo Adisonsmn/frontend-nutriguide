@@ -47,9 +47,6 @@ export const Navbar = () => {
         {/* Left: Logo & Links */}
         <div className="flex items-center gap-8">
           <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-primary font-bold text-lg leading-none">N</span>
-            </div>
             <span className="font-semibold text-lg tracking-tight">Nutri Guide</span>
           </Link>
 

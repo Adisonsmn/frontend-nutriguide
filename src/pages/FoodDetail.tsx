@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Save, Flame } from 'lucide-react';
+import { ArrowLeft, BookOpen, Save, Flame, Beef, Wheat, Droplets, UtensilsCrossed, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchFoodById, addToHistory } from '../api/food.api';
 import type { Food } from '../types/food.types';
@@ -32,6 +32,8 @@ export const FoodDetail = () => {
   const [isSaving, setIsSaving] = useState(false);
   // Bug #15: User-configurable quantity instead of hardcoded 100g
   const [quantity, setQuantity] = useState<number>(100);
+  const [showEatModal, setShowEatModal] = useState(false);
+  const [eatQuantity, setEatQuantity] = useState<number>(100);
 
   usePageTitle(food?.name ?? 'Food Detail');
 
@@ -57,10 +59,25 @@ export const FoodDetail = () => {
     setIsSaving(true);
     try {
       // Bug #15: Use user-specified quantity
-      await addToHistory(foodId, quantity);
+      await addToHistory(foodId, quantity, false);
       toast.success(`Saved ${quantity}g to history!`);
     } catch {
       toast.error('Failed to save to history');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /* ─── Eat Now ─── */
+  const handleEatNow = async () => {
+    if (!foodId || eatQuantity <= 0) return;
+    setIsSaving(true);
+    try {
+      await addToHistory(foodId, eatQuantity, true);
+      toast.success(`Nutrition for ${eatQuantity}g logged!`);
+      setShowEatModal(false);
+    } catch {
+      toast.error('Failed to log meal');
     } finally {
       setIsSaving(false);
     }
@@ -154,14 +171,17 @@ export const FoodDetail = () => {
             <p className="text-xs text-gray-500">Calories</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-4 text-center">
+            <Beef size={20} className="mx-auto text-blue-400 mb-1" />
             <p className="text-xl font-bold text-gray-900">{food.protein_g}g</p>
             <p className="text-xs text-gray-500">Protein</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-4 text-center">
+            <Wheat size={20} className="mx-auto text-indigo-400 mb-1" />
             <p className="text-xl font-bold text-gray-900">{food.carbs_g}g</p>
             <p className="text-xs text-gray-500">Carbs</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-4 text-center">
+            <Droplets size={20} className="mx-auto text-yellow-400 mb-1" />
             <p className="text-xl font-bold text-gray-900">{food.fat_g}g</p>
             <p className="text-xs text-gray-500">Fat</p>
           </div>
@@ -170,6 +190,14 @@ export const FoodDetail = () => {
 
       {/* ─── Action Buttons ─── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+        {/* Eat Now */}
+        <button
+          onClick={() => setShowEatModal(true)}
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold hover:opacity-90 transition-opacity mb-3 shadow-md"
+        >
+          <UtensilsCrossed size={18} /> Eat Now
+        </button>
+
         {/* View Recipe */}
         <button
           id="btn-view-recipe"
@@ -203,7 +231,7 @@ export const FoodDetail = () => {
           disabled={isSaving || quantity <= 0}
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gold text-gray-900 font-semibold hover:bg-gold/90 transition-colors mb-3 disabled:opacity-50"
         >
-          <Save size={18} /> {isSaving ? 'Saving...' : `Save ${quantity}g to History`}
+          <Save size={18} /> {isSaving && !showEatModal ? 'Saving...' : `Save ${quantity}g to History`}
         </button>
 
         {/* Back to Recommendations */}
@@ -223,6 +251,63 @@ export const FoodDetail = () => {
           This meal matches your dietary preferences and fits within your budget goals.
         </p>
       </div>
+
+      {/* ─── Eat Now Modal ─── */}
+      {showEatModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-sm w-full mx-4 animate-fade-in relative">
+            <button
+              onClick={() => setShowEatModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={20} />
+            </button>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <UtensilsCrossed size={24} className="text-orange-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">How much did you eat?</h3>
+              <p className="text-sm text-gray-500 mt-1">Enter quantity to calculate nutrition.</p>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Quantity (grams)</label>
+              <input
+                type="number"
+                min={1}
+                max={2000}
+                value={eatQuantity}
+                onChange={(e) => setEatQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition text-center"
+              />
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 mb-6">
+              <p className="text-sm text-gray-600 flex justify-between">
+                <span>Calories:</span>
+                <span className="font-semibold text-gray-900">{Math.round(food.calories * (eatQuantity / 100))} kcal</span>
+              </p>
+              <p className="text-sm text-gray-600 flex justify-between mt-1">
+                <span>Protein:</span>
+                <span className="font-semibold text-gray-900">{Math.round(food.protein_g * (eatQuantity / 100))}g</span>
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEatModal(false)}
+                className="flex-1 py-3 rounded-xl font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEatNow}
+                disabled={isSaving}
+                className="flex-1 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-orange-400 to-orange-500 hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {isSaving ? 'Logging...' : 'Log Meal'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

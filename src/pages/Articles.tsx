@@ -172,24 +172,6 @@ export const Articles = () => {
         </div>
       )}
 
-      {/* ─── Newsletter Banner ─── */}
-      <div className="bg-primary rounded-2xl p-8 text-center shadow-md">
-        <h3 className="text-xl font-bold text-white mb-2">Stay Updated with Health Tips</h3>
-        <p className="text-primary-foreground/80 text-sm mb-5">
-          Subscribe to our newsletter for weekly nutrition insights and recipes
-        </p>
-        <div className="flex items-center justify-center gap-3 max-w-md mx-auto">
-          <input
-            id="newsletter-email"
-            type="email"
-            placeholder="Enter your email"
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm bg-white text-gray-800 focus:outline-none"
-          />
-          <button className="px-5 py-2.5 bg-gold text-primary rounded-lg text-sm font-semibold hover:bg-yellow-400 transition-colors">
-            Subscribe
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

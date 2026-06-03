@@ -1,4 +1,5 @@
 import { Flame } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { Food } from '../../types/food.types';
 
 interface FoodCardProps {
@@ -6,16 +7,23 @@ interface FoodCardProps {
 }
 
 export const FoodCard = ({ food }: FoodCardProps) => {
+  const navigate = useNavigate();
+
   return (
-    <div className="rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 bg-white">
+    <div 
+      onClick={() => navigate(`/food/${food.food_id}`)}
+      className="rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 bg-white cursor-pointer group"
+    >
       {/* Image */}
       {food.image_url ? (
-        <img
-          src={food.image_url}
-          alt={food.name}
-          className="w-full h-48 object-cover"
-          loading="lazy"
-        />
+        <div className="relative w-full h-48 overflow-hidden">
+          <img
+            src={food.image_url}
+            alt={food.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
+          />
+        </div>
       ) : (
         <div className="w-full h-48 bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
           Image not yet available
@@ -24,7 +32,7 @@ export const FoodCard = ({ food }: FoodCardProps) => {
 
       {/* Info */}
       <div className="p-4">
-        <h3 className="font-semibold text-gray-800 text-base">{food.name}</h3>
+        <h3 className="font-semibold text-gray-800 text-base group-hover:text-primary transition-colors">{food.name}</h3>
         <div className="flex items-center gap-3 mt-1.5">
           <span className="flex items-center gap-1 text-sm text-gray-500">
             <Flame size={14} className="text-orange-400" />

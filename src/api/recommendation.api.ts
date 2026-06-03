@@ -9,7 +9,7 @@ export interface RecommendationParams {
 
 export const fetchRecommendations = async (params?: RecommendationParams) => {
   const queryParams: Record<string, string> = {};
-  if (params?.budget) queryParams.budget = String(params.budget);
+  if (params?.budget != null) queryParams.budget = String(params.budget);
   if (params?.preference) queryParams.preference = params.preference;
 
   const response = await api.get<ApiResponse<RecommendationData>>('/recommendations', {

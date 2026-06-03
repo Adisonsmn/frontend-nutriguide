@@ -7,10 +7,11 @@ export const fetchFoodById = async (foodId: string) => {
   return response.data;
 };
 
-export const addToHistory = async (foodId: string, qtyGram: number) => {
+export const addToHistory = async (foodId: string, qtyGram: number, isConsumed: boolean = false) => {
   const response = await api.post<ApiResponse<null>>('/history', {
     food_id: foodId,
     qty_gram: qtyGram,
+    is_consumed: isConsumed,
   });
   return response.data;
 };

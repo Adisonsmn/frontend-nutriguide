@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Download,
   Search,
+  SearchX,
   SlidersHorizontal,
 } from 'lucide-react';
 import { fetchRecommendations } from '../api/recommendation.api';
@@ -42,6 +43,8 @@ export const Recommendation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showNoFoodAlert, setShowNoFoodAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   /* ─── budget / preference filter states ─── */
   const [budgetFilter, setBudgetFilter] = useState<string>('');
@@ -63,13 +66,21 @@ export const Recommendation = () => {
 
     try {
       const params: Record<string, unknown> = {};
-      if (budget) params.budget = Number(budget);
+      if (budget !== '') params.budget = Number(budget);
       if (preference) params.preference = preference;
 
       const recRes = await fetchRecommendations(
         params as { budget?: number; preference?: string }
       );
       setRecommendation(recRes.data);
+      
+      const allFetchedFoods = recRes.data.meals ? Object.values(recRes.data.meals).flat() : [];
+      if (recRes.data.message && allFetchedFoods.length === 0) {
+        setAlertMessage(recRes.data.message);
+        setShowNoFoodAlert(true);
+      } else {
+        setShowNoFoodAlert(false);
+      }
     } catch (err: unknown) {
       const reason = err as { response?: { data?: { message?: string } } };
       const backendMsg = reason?.response?.data?.message;
@@ -245,7 +256,7 @@ export const Recommendation = () => {
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
             <Star size={20} className="text-gold" />
             <p className="text-3xl font-bold text-gray-900 mt-2">{stats.mealSlots}</p>
-            <p className="text-sm text-gray-500">Daily Meals</p>
+            <p className="text-sm text-gray-500">Daily Meals ({stats.mealSlots}/4)</p>
           </div>
 
           {/* Top Category */}
@@ -344,7 +355,7 @@ export const Recommendation = () => {
       </div>
 
       {/* ─── Food Cards Grid (2-column, matching design reference) ─── */}
-      {filteredFoods.length > 0 ? (
+      {!showNoFoodAlert && filteredFoods.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
           {filteredFoods.map((food, idx) => (
             <div
@@ -402,11 +413,28 @@ export const Recommendation = () => {
             </div>
           ))}
         </div>
-      ) : (
+      ) : !showNoFoodAlert ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center mb-8">
           <Search size={40} className="mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500 font-medium">No foods match your search</p>
           <p className="text-gray-400 text-sm mt-1">Try adjusting your search terms or filters</p>
+        </div>
+      ) : null}
+
+      {/* ─── No Food Alert Modal ─── */}
+      {showNoFoodAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm mx-4 text-center animate-fade-in">
+            <SearchX size={48} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Makanan Tidak Ditemukan</h3>
+            <p className="text-sm text-gray-500 mb-6">{alertMessage}</p>
+            <button 
+              onClick={() => setShowNoFoodAlert(false)} 
+              className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
+              OK
+            </button>
+          </div>
         </div>
       )}
 

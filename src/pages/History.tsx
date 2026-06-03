@@ -59,6 +59,7 @@ const groupByDate = (items: FoodHistory[]): DayGroup[] => {
     });
 
     const totalCalories = entries.reduce((sum, e) => {
+      if (!e.is_consumed) return sum;
       const ratio = e.qty_gram / 100;
       return sum + (e.food?.calories ?? 0) * ratio;
     }, 0);
@@ -112,6 +113,7 @@ export const History = () => {
   const stats = useMemo(() => {
     const totalMeals = history.length;
     const totalCal = history.reduce((sum, e) => {
+      if (!e.is_consumed) return sum;
       const ratio = e.qty_gram / 100;
       return sum + (e.food?.calories ?? 0) * ratio;
     }, 0);
@@ -304,6 +306,11 @@ export const History = () => {
                         >
                           {mealType}
                         </span>
+                        {entry.is_consumed && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                            Consumed
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-400 mt-0.5">{calories} calories</p>
                     </div>
